@@ -17,7 +17,7 @@ public class MainApplication extends Application {
     public void onCreate() {
         super.onCreate();
         initLynxService();
-        LynxEnv.inst().init(this, null, null, null);
+        LynxEnv.inst().init(this, null, new AssetTemplateProvider(this), null);
     }
 
     private void initLynxService() {
