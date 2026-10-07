@@ -1,6 +1,7 @@
 package com.example.lynxapp;
 
 import android.app.Application;
+import android.util.Log;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.imagepipeline.core.ImagePipelineConfig;
@@ -12,12 +13,19 @@ import com.lynx.tasm.LynxEnv;
 import com.lynx.tasm.service.LynxServiceCenter;
 
 public class MainApplication extends Application {
+    // Ishga tushirishdagi xato (bo'lsa) — MainActivity ekranda ko'rsatadi
+    static String initError;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        initLynxService();
-        LynxEnv.inst().init(this, null, new AssetTemplateProvider(this), null);
+        try {
+            initLynxService();
+            LynxEnv.inst().init(this, null, new AssetTemplateProvider(this), null);
+        } catch (Throwable t) {
+            initError = Log.getStackTraceString(t);
+            Log.e(MainActivity.TAG, "Lynx init failed", t);
+        }
     }
 
     private void initLynxService() {

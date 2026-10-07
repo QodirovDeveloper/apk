@@ -40,9 +40,11 @@ jobs:
 
       - name: APK ichini tekshirish
         run: |
+          mkdir -p diag
           APK=android/app/build/outputs/apk/debug/app-debug.apk
-          unzip -l $APK | grep -E 'assets/|liblynx|libprimjs' || true
-          unzip -l $APK | grep -q 'assets/main.lynx.bundle' || { echo "main.lynx.bundle APK ichida yo'q!"; exit 1; }
+          unzip -l $APK | grep -E 'assets/|\.so$' > diag/apk-contents.txt || true
+          cat diag/apk-contents.txt
+          grep -q 'assets/main.lynx.bundle' diag/apk-contents.txt || { echo "main.lynx.bundle APK ichida yo'q!"; exit 1; }
 
       - name: APK'ni artifact sifatida saqlash
         uses: actions/upload-artifact@v4
@@ -50,10 +52,52 @@ jobs:
           name: lynx-app-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
+      - name: KVM yoqish (emulator uchun)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Emulatorda sinash
+        continue-on-error: true
+        timeout-minutes: 20
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: default
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: bash .github/scripts/emulator-test.sh
+
+      - name: Diagnostika hisobotini tayyorlash
+        if: always()
+        run: |
+          mkdir -p diag
+          {
+            echo "Commit: ${{ github.sha }}"
+            echo
+            echo '### APK ichidagi .so va assets'
+            echo '```'; cat diag/apk-contents.txt 2>/dev/null; echo '```'
+            echo '### Emulator: install / start / pid'
+            echo '```'; cat diag/install.txt diag/start.txt diag/pid.txt 2>/dev/null; echo '```'
+            echo '### Ilova diagnostikasi (LynxApp)'
+            echo '```'; grep 'LynxApp' diag/logcat.txt 2>/dev/null | tail -60; echo '```'
+            echo '### Logcat (Lynx / xatolar)'
+            echo '```'
+            grep -iE 'lynx|primjs|AndroidRuntime|FATAL|UnsatisfiedLink|dlopen|linker|com\.example\.lynxapp|DEBUG' diag/logcat.txt 2>/dev/null | grep -v 'LynxApp' | tail -250 | cut -c1-400
+            echo '```'
+          } > diag/notes.md
+          head -c 120000 diag/notes.md > diag/notes-trimmed.md
+          wc -c diag/notes.md
+
       - name: Latest release ga joylash (telefondan oson yuklash uchun)
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp android/app/build/outputs/apk/debug/app-debug.apk lynx-app.apk
+          FILES="lynx-app.apk"
+          [ -s diag/screen.png ] && cp diag/screen.png emulator-screen.png && FILES="$FILES emulator-screen.png"
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest lynx-app.apk --title "Oxirgi APK" --notes "Commit: ${{ github.sha }}"
+          gh release create latest $FILES --title "Oxirgi APK" --notes-file diag/notes-trimmed.md
