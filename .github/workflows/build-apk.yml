@@ -36,7 +36,10 @@ jobs:
 
       - name: APK yig'ish
         working-directory: android
-        run: gradle assembleDebug --no-daemon
+        run: |
+          set -o pipefail
+          mkdir -p ../diag
+          gradle assembleDebug --no-daemon 2>&1 | tee ../diag/gradle.txt
 
       - name: APK ichini tekshirish
         run: |
@@ -77,6 +80,12 @@ jobs:
           {
             echo "Commit: ${{ github.sha }}"
             echo
+            if grep -qE 'FAILURE|BUILD FAILED' diag/gradle.txt 2>/dev/null; then
+              echo '### Gradle xatolari'
+              echo '```'
+              grep -nE -A4 'error:|What went wrong|Duplicate class|FAILED|e: ' diag/gradle.txt | head -200 | cut -c1-400
+              echo '```'
+            fi
             echo '### APK ichidagi .so va assets'
             echo '```'; cat diag/apk-contents.txt 2>/dev/null; echo '```'
             echo '### Emulator: install / start / pid'
@@ -96,6 +105,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ ! -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            # Build yiqildi: eski APK'ga tegmaymiz, xatoni alohida release'ga yozamiz
+            gh release delete build-xato --yes --cleanup-tag || true
+            gh release create build-xato --prerelease --title "Build xatosi" --notes-file diag/notes-trimmed.md
+            exit 1
+          fi
+          gh release delete build-xato --yes --cleanup-tag || true
           cp android/app/build/outputs/apk/debug/app-debug.apk lynx-app.apk
           FILES="lynx-app.apk"
           [ -s diag/screen.png ] && cp diag/screen.png emulator-screen.png && FILES="$FILES emulator-screen.png"
