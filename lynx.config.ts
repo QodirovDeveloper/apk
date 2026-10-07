@@ -5,9 +5,10 @@ import { pluginTypeCheck } from '@rsbuild/plugin-type-check';
 
 export default defineConfig({
   // APK uchun build qilganda rasmlarni bundle ichiga joylaymiz (assets'dan yuklanadi, server yo'q)
+  // Oddiy build/dev'da brauzer preview ham yig'iladi: /__web_preview?casename=main.web.bundle
   ...(process.env.APK_BUILD
     ? { output: { dataUriLimit: Number.MAX_SAFE_INTEGER } }
-    : {}),
+    : { environments: { web: {}, lynx: {} } }),
   plugins: [
     pluginQRCode({
       schema(url) {
