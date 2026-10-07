@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.lynxapp'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.lynxapp"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    // Lynx
+    implementation "org.lynxsdk.lynx:lynx:4.1.0"
+    implementation "org.lynxsdk.lynx:lynx-jssdk:4.1.0"
+    implementation "org.lynxsdk.lynx:lynx-trace:4.1.0"
+    implementation "org.lynxsdk.lynx:primjs:4.1.1"
+
+    // Rasmlar (<image>) uchun
+    implementation "org.lynxsdk.lynx:lynx-service-image:4.1.0"
+    implementation "com.facebook.fresco:fresco:2.3.0"
+    implementation "com.facebook.fresco:animated-gif:2.3.0"
+    implementation "com.facebook.fresco:animated-webp:2.3.0"
+    implementation "com.facebook.fresco:webpsupport:2.3.0"
+    implementation "com.facebook.fresco:animated-base:2.3.0"
+
+    // Log
+    implementation "org.lynxsdk.lynx:lynx-service-log:4.1.0"
+}

@@ -1,0 +1,53 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Lynx bundle yig'ish
+        run: |
+          npm ci
+          APK_BUILD=1 npm run build
+          cp dist/main.lynx.bundle android/app/src/main/assets/main.lynx.bundle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: APK yig'ish
+        working-directory: android
+        run: gradle assembleDebug --no-daemon
+
+      - name: APK'ni artifact sifatida saqlash
+        uses: actions/upload-artifact@v4
+        with:
+          name: lynx-app-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Latest release ga joylash (telefondan oson yuklash uchun)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk lynx-app.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest lynx-app.apk --title "Oxirgi APK" --notes "Commit: ${{ github.sha }}"
