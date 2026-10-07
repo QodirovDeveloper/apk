@@ -17,6 +17,7 @@ import com.lynx.tasm.LynxError;
 import com.lynx.tasm.LynxView;
 import com.lynx.tasm.LynxViewBuilder;
 import com.lynx.tasm.LynxViewClient;
+import com.lynx.xelement.XElementBehaviors;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -71,6 +72,8 @@ public class MainActivity extends Activity {
 
             LynxViewBuilder builder = new LynxViewBuilder();
             builder.addBehaviors(new ImageBehavior().create());
+            // <input> va boshqa XElement teglari
+            builder.addBehaviors(new XElementBehaviors().create());
             builder.setTemplateProvider(new AssetTemplateProvider(this));
             mLynxView = builder.build(this);
             mLynxView.addLynxViewClient(new LynxViewClient() {

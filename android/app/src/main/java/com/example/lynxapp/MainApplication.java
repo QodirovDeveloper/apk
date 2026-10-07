@@ -22,6 +22,9 @@ public class MainApplication extends Application {
         try {
             initLynxService();
             LynxEnv.inst().init(this, null, new AssetTemplateProvider(this), null);
+            // JS'dagi NativeModules.* nomlari bilan bir xil bo'lishi shart
+            LynxEnv.inst().registerModule("NativeLocalStorageModule", NativeLocalStorageModule.class);
+            LynxEnv.inst().registerModule("BellModule", BellModule.class);
         } catch (Throwable t) {
             initError = Log.getStackTraceString(t);
             Log.e(MainActivity.TAG, "Lynx init failed", t);
